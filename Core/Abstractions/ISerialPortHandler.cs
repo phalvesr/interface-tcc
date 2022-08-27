@@ -6,6 +6,7 @@ namespace InterfaceAquisicaoDadosMotorDc.Core.Abstractions
     {
         string[] ListarSerialPortsDisponiveis();
         void RegisterSerialDataReceivedEventHandler(SerialDataReceivedEventHandler handler);
-        void IniciarCapturaDadosSerial();
+        void IniciarCapturaDadosSerial(string portName);
+        void PararCapturaDadosSerial();
     }
 }

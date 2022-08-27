@@ -28,6 +28,8 @@ namespace InterfaceAquisicaoDadosMotorDc
             services.AddSingleton<ISerialPortHandler, SerialPortHandler>();
             services.AddSingleton<IListSerialPortsUseCase, ListSerialPortsUseCase>();
             services.AddSingleton<ISerialDataReceivedHandler, HandleDataReceivedUseCase>();
+            services.AddSingleton<IStartSerialDataCaptureUseCase, StartSerialDataCapture>();
+            services.AddSingleton<IStopSerialDataCapture, StopSerialDataCapture>();
         }
     }
 }

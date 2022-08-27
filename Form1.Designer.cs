@@ -80,7 +80,7 @@
             // 
             // Timer_Atualizacao_Portas_Seriais
             // 
-            this.Timer_Atualizacao_Portas_Seriais.Interval = 500;
+            this.Timer_Atualizacao_Portas_Seriais.Interval = 2000;
             this.Timer_Atualizacao_Portas_Seriais.Tick += new System.EventHandler(this.Timer_Atualizacao_Portas_Seriais_Tick);
             // 
             // Btn_Iniciar_Captura_Dados

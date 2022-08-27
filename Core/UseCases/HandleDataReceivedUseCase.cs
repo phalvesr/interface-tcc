@@ -26,15 +26,21 @@ namespace InterfaceAquisicaoDadosMotorDc.Core.UseCases
 
         private void handler(object sender, SerialDataReceivedEventArgs e)
         {
-            var serialPort = sender as SerialPort;
-            var linha = serialPort!.ReadLine();
+            try
+            {
+                var serialPort = sender as SerialPort;
+                var linha = serialPort!.ReadLine();
 
-            var (tensaoDiscretizada, correnteDiscretizada) = ParseLinhaRecebida(linha.Trim());
+                var (tensaoDiscretizada, correnteDiscretizada) = ParseLinhaRecebida(linha.Trim());
 
-            this.Voltage = tensaoDiscretizada;
-            this.Current = correnteDiscretizada;
+                this.Voltage = tensaoDiscretizada;
+                this.Current = correnteDiscretizada;
 
-            SerialDataParsed.Invoke(this, null!);
+                SerialDataParsed.Invoke(this, null!);
+            }
+            // Deveria ocorrer somente quando a porta for fechada e o buffer serial retornar um valor que,
+            // ao ser parseado gera exception
+            catch (SystemException) {  }
         }
 
         private (int tensaoDiscretizada, int correnteDiscretizada) ParseLinhaRecebida(string linha)

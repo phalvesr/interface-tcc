@@ -1,7 +1,6 @@
 ﻿using InterfaceAquisicaoDadosMotorDc.Core.Abstractions;
 using InterfaceAquisicaoDadosMotorDc.Core.UseCases.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
-using System.IO.Ports;
 
 namespace InterfaceAquisicaoDadosMotorDc.Core.UseCases
 {
@@ -12,7 +11,6 @@ namespace InterfaceAquisicaoDadosMotorDc.Core.UseCases
         public ListSerialPortsUseCase(IServiceProvider serviceProvider)
         {
             serialPortHandler = serviceProvider.GetRequiredService<ISerialPortHandler>();
-            serialPortHandler.IniciarCapturaDadosSerial();
         }
 
         public string[] Execute()

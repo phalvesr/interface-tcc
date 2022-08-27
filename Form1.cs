@@ -6,12 +6,15 @@ namespace InterfaceAquisicaoDadosMotorDc
 {
     public partial class FormPrincipal : Form
     {
+        // tempo total de captura: (TEMPO_AMOSTRAS / 0.050)
         const int TOTAL_AMOSTRAS = 10_000;
+
         private bool isCapturandoDados = false;
-        
-        //private readonly IServiceProvider serviceProvider;
+
         private readonly IListSerialPortsUseCase listaSerialPortsUseCase;
         private readonly ISerialDataReceivedHandler serialDataReceivedHandler;
+        private readonly IStartSerialDataCaptureUseCase startSerialDataCaptureUseCase;
+        private readonly IStopSerialDataCapture stopSerialDataCaptureUseCase;
 
         private int voltagesIndex = 0;
         private int currentsIndex = 0;
@@ -22,9 +25,11 @@ namespace InterfaceAquisicaoDadosMotorDc
         public FormPrincipal(IServiceProvider serviceProvider)
         {
             InitializeComponent();
-            //this.serviceProvider = serviceProvider;
+
             listaSerialPortsUseCase = serviceProvider.GetRequiredService<IListSerialPortsUseCase>();
             serialDataReceivedHandler = serviceProvider.GetRequiredService<ISerialDataReceivedHandler>();
+            startSerialDataCaptureUseCase = serviceProvider.GetRequiredService<IStartSerialDataCaptureUseCase>();
+            stopSerialDataCaptureUseCase = serviceProvider.GetRequiredService<IStopSerialDataCapture>();
         }
 
         private void FormPrincipal_Load(object sender, EventArgs e)
@@ -34,11 +39,19 @@ namespace InterfaceAquisicaoDadosMotorDc
             SetChartsLabels();
             DisableChartGrid();
 
-            Voltage_Chart.Plot.AddSignal(voltagesToSave, 0.5, label: "Voltage (V)");
+            var voltageSignal = Voltage_Chart.Plot.AddSignal(voltagesToSave, 0.5, label: "Voltage (V)");
             Voltage_Chart.Plot.SetAxisLimits(0, TOTAL_AMOSTRAS, 0, 5);
 
-            Current_Chart.Plot.AddSignal(currentsToSave, 0.5, label: "Current (A)");
+            voltageSignal.FillBelow(Color.DarkGreen);
+            voltageSignal.LineColor = Color.DarkGreen;
+
+
+            var currentSignal = Current_Chart.Plot.AddSignal(currentsToSave, 0.5, label: "Current (A)");
             Current_Chart.Plot.SetAxisLimits(0, TOTAL_AMOSTRAS, 0, 5);
+
+            currentSignal.FillBelow(Color.DarkGreen);
+            currentSignal.LineColor = Color.DarkGreen;
+
 
             this.serialDataReceivedHandler.SerialDataParsed += SerialDataReceivedHandler_SerialDataParsed;
         }
@@ -48,11 +61,11 @@ namespace InterfaceAquisicaoDadosMotorDc
             
             var serialDataReceived = (ISerialDataReceivedHandler)sender!;
 
-            var v = serialDataReceived!.Voltage;
-            var c = serialDataReceived!.Current;
+            var voltage = serialDataReceived!.Voltage;
+            var current = serialDataReceived!.Current;
 
-            UpdateVoltagePlot(ConversorDiscretoFisico.ConverterParaTensao(v));
-            UpdateCurrentPlot(ConversorDiscretoFisico.ConverterParaCorrente(c));
+            UpdateVoltagePlot(ConversorDiscretoFisico.ConverterParaTensao(voltage));
+            UpdateCurrentPlot(ConversorDiscretoFisico.ConverterParaCorrente(current));
         }
 
         private void DisableChartGrid()
@@ -65,11 +78,11 @@ namespace InterfaceAquisicaoDadosMotorDc
         {
             Voltage_Chart.Plot.XLabel("Samples");
             Voltage_Chart.Plot.YLabel("Voltage (V)");
-            Voltage_Chart.Plot.Title("Voltage", true, Color.DarkOrange);
+            Voltage_Chart.Plot.Title("Voltage", true, Color.Black);
 
             Current_Chart.Plot.XLabel("Samples");
             Current_Chart.Plot.YLabel("Current (A)");
-            Current_Chart.Plot.Title("Current", true, Color.DarkOrange);
+            Current_Chart.Plot.Title("Current", true, Color.Black);
         }
 
         private void Btn_Salvar_Captura_Click(object sender, EventArgs e)
@@ -121,32 +134,40 @@ namespace InterfaceAquisicaoDadosMotorDc
 
         private void Btn_Iniciar_Captura_Dados_Click(object sender, EventArgs e)
         {
+            var selectedPortName = Cb_Lista_SerialPorts.Text;
+
+            if (string.IsNullOrEmpty(selectedPortName) || string.IsNullOrEmpty(selectedPortName))
+            {
+                MessageBox.Show("Por favor, selecione uma porta serial", "Porta serial inválida",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             this.isCapturandoDados = !this.isCapturandoDados;
 
             if (this.isCapturandoDados)
             {
-                Btn_Iniciar_Captura_Dados.Text = "Iniciar captura";
+                Btn_Iniciar_Captura_Dados.Text = "Parar captura";
 
-                IniciarCapturaDados();
+                IniciarCapturaDados(selectedPortName);
                 return;
             }
 
-            Btn_Iniciar_Captura_Dados.Text = "Parar captura";
+            Btn_Iniciar_Captura_Dados.Text = "Iniciar captura";
             PararCapturaDados();
         }
 
-        private void IniciarCapturaDados()
+        private void IniciarCapturaDados(string selectedPortName)
         {
-            // Iniciar a porta serial selecionada pelo usuario
-            // Executar a leitura dos dados
-            // Adicionar os dados lidos ao array de dados
-            // Imprimir no grafico
+            isCapturandoDados = true;
+
             this.serialDataReceivedHandler.Execute();
+            this.startSerialDataCaptureUseCase.Execute(selectedPortName);
         }
 
         private void PararCapturaDados()
         {
-
+            stopSerialDataCaptureUseCase.Execute();
         }
 
         private void TimerCemMilissegundos_Tick(object sender, EventArgs e)
