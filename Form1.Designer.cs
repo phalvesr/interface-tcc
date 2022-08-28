@@ -37,8 +37,6 @@
             this.Btn_Iniciar_Captura_Dados = new System.Windows.Forms.Button();
             this.Voltage_Chart = new ScottPlot.FormsPlot();
             this.Current_Chart = new ScottPlot.FormsPlot();
-            this.Lbl_Teste = new System.Windows.Forms.Label();
-            this.Lbl_Teste_2 = new System.Windows.Forms.Label();
             this.TimerCemMilissegundos = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
@@ -109,24 +107,6 @@
             this.Current_Chart.Size = new System.Drawing.Size(631, 216);
             this.Current_Chart.TabIndex = 8;
             // 
-            // Lbl_Teste
-            // 
-            this.Lbl_Teste.AutoSize = true;
-            this.Lbl_Teste.Location = new System.Drawing.Point(16, 280);
-            this.Lbl_Teste.Name = "Lbl_Teste";
-            this.Lbl_Teste.Size = new System.Drawing.Size(38, 15);
-            this.Lbl_Teste.TabIndex = 9;
-            this.Lbl_Teste.Text = "label1";
-            // 
-            // Lbl_Teste_2
-            // 
-            this.Lbl_Teste_2.AutoSize = true;
-            this.Lbl_Teste_2.Location = new System.Drawing.Point(16, 307);
-            this.Lbl_Teste_2.Name = "Lbl_Teste_2";
-            this.Lbl_Teste_2.Size = new System.Drawing.Size(38, 15);
-            this.Lbl_Teste_2.TabIndex = 10;
-            this.Lbl_Teste_2.Text = "label1";
-            // 
             // TimerCemMilissegundos
             // 
             this.TimerCemMilissegundos.Enabled = true;
@@ -135,8 +115,6 @@
             // FormPrincipal
             // 
             this.ClientSize = new System.Drawing.Size(784, 561);
-            this.Controls.Add(this.Lbl_Teste_2);
-            this.Controls.Add(this.Lbl_Teste);
             this.Controls.Add(this.Current_Chart);
             this.Controls.Add(this.Voltage_Chart);
             this.Controls.Add(this.Btn_Iniciar_Captura_Dados);
@@ -163,8 +141,6 @@
         private Button Btn_Iniciar_Captura_Dados;
         private ScottPlot.FormsPlot Voltage_Chart;
         private ScottPlot.FormsPlot Current_Chart;
-        private Label Lbl_Teste;
-        private Label Lbl_Teste_2;
         private System.Windows.Forms.Timer TimerCemMilissegundos;
     }
 }

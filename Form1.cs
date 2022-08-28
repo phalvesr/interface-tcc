@@ -15,9 +15,9 @@ namespace InterfaceAquisicaoDadosMotorDc
         private readonly ISerialDataReceivedHandler serialDataReceivedHandler;
         private readonly IStartSerialDataCaptureUseCase startSerialDataCaptureUseCase;
         private readonly IStopSerialDataCapture stopSerialDataCaptureUseCase;
+        private readonly ISaveCsvFileUseCase saveCsvFileUseCase;
 
-        private int voltagesIndex = 0;
-        private int currentsIndex = 0;
+        private int indexAmostras = 0;
 
         private readonly double[] voltagesToSave = new double[TOTAL_AMOSTRAS];
         private readonly double[] currentsToSave = new double[TOTAL_AMOSTRAS];
@@ -30,6 +30,7 @@ namespace InterfaceAquisicaoDadosMotorDc
             serialDataReceivedHandler = serviceProvider.GetRequiredService<ISerialDataReceivedHandler>();
             startSerialDataCaptureUseCase = serviceProvider.GetRequiredService<IStartSerialDataCaptureUseCase>();
             stopSerialDataCaptureUseCase = serviceProvider.GetRequiredService<IStopSerialDataCapture>();
+            saveCsvFileUseCase = serviceProvider.GetRequiredService<ISaveCsvFileUseCase>();
         }
 
         private void FormPrincipal_Load(object sender, EventArgs e)
@@ -66,6 +67,7 @@ namespace InterfaceAquisicaoDadosMotorDc
 
             UpdateVoltagePlot(ConversorDiscretoFisico.ConverterParaTensao(voltage));
             UpdateCurrentPlot(ConversorDiscretoFisico.ConverterParaCorrente(current));
+            indexAmostras++;
         }
 
         private void DisableChartGrid()
@@ -93,6 +95,35 @@ namespace InterfaceAquisicaoDadosMotorDc
 
                 return;
             }
+
+            var resultParada = MessageBox.Show("Deseja parar a captura dos dados?", "Parando captura", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            
+            if (resultParada != DialogResult.Yes)
+            {
+                return;
+            }
+
+            PararCapturaDados();
+
+            using var fileDialog = new SaveFileDialog();
+            fileDialog.InitialDirectory = "";
+            fileDialog.RestoreDirectory = true;
+
+
+            if (fileDialog.ShowDialog() != DialogResult.OK)
+            {
+                return;
+            }
+
+            this.saveCsvFileUseCase.GerarCsv(fileDialog.FileName, this.voltagesToSave, this.currentsToSave, indexAmostras)
+            .match(_ =>
+            {
+                MessageBox.Show("Arquivo salvo com sucesso!", "Arquivo salvo!", MessageBoxButtons.OK);
+            }, erro =>
+            {
+                MessageBox.Show(erro.Message, "Erro ao salvar arquivo", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            });
+
         }
 
         private void Timer_Atualizacao_Portas_Seriais_Tick(object sender, EventArgs e)
@@ -109,27 +140,23 @@ namespace InterfaceAquisicaoDadosMotorDc
 
         private void UpdateCurrentPlot(double readedCurrent)
         {
-            if (currentsIndex >= TOTAL_AMOSTRAS)
+            if (indexAmostras >= TOTAL_AMOSTRAS)
             {
-                currentsIndex = 0;
+                indexAmostras = 0;
             }
 
-            currentsToSave[currentsIndex] = readedCurrent;
-
-            currentsIndex++;
+            currentsToSave[indexAmostras] = readedCurrent;
         }
 
         private void UpdateVoltagePlot(double readedVoltage)
         {
             
-            if (voltagesIndex >= TOTAL_AMOSTRAS)
+            if (indexAmostras >= TOTAL_AMOSTRAS)
             {
-                voltagesIndex = 0;
+                indexAmostras = 0;
             }
 
-            voltagesToSave[voltagesIndex] = readedVoltage;
-
-            voltagesIndex++;
+            voltagesToSave[indexAmostras] = readedVoltage;
         }
 
         private void Btn_Iniciar_Captura_Dados_Click(object sender, EventArgs e)
@@ -147,27 +174,28 @@ namespace InterfaceAquisicaoDadosMotorDc
 
             if (this.isCapturandoDados)
             {
-                Btn_Iniciar_Captura_Dados.Text = "Parar captura";
-
                 IniciarCapturaDados(selectedPortName);
                 return;
             }
 
-            Btn_Iniciar_Captura_Dados.Text = "Iniciar captura";
             PararCapturaDados();
         }
 
         private void IniciarCapturaDados(string selectedPortName)
         {
-            isCapturandoDados = true;
-
             this.serialDataReceivedHandler.Execute();
             this.startSerialDataCaptureUseCase.Execute(selectedPortName);
+
+            isCapturandoDados = true;
+            Btn_Iniciar_Captura_Dados.Text = "Parar captura";
         }
 
         private void PararCapturaDados()
         {
             stopSerialDataCaptureUseCase.Execute();
+
+            this.isCapturandoDados = false;
+            Btn_Iniciar_Captura_Dados.Text = "Iniciar captura";
         }
 
         private void TimerCemMilissegundos_Tick(object sender, EventArgs e)

@@ -30,6 +30,7 @@ namespace InterfaceAquisicaoDadosMotorDc
             services.AddSingleton<ISerialDataReceivedHandler, HandleDataReceivedUseCase>();
             services.AddSingleton<IStartSerialDataCaptureUseCase, StartSerialDataCapture>();
             services.AddSingleton<IStopSerialDataCapture, StopSerialDataCapture>();
+            services.AddSingleton<ISaveCsvFileUseCase, SaveCsvFileUseCase>();
         }
     }
 }
