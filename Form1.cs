@@ -196,6 +196,19 @@ namespace InterfaceAquisicaoDadosMotorDc
 
             this.isCapturandoDados = false;
             Btn_Iniciar_Captura_Dados.Text = "Iniciar captura";
+
+            var limparDados = MessageBox.Show("Deseja limpar dados?", "Limpar dados", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            
+            if (limparDados == DialogResult.Yes)
+            {
+                for (var i = 0; i < indexAmostras; i++)
+                {
+                    this.voltagesToSave[i] = 0;
+                    this.currentsToSave[i] = 0;
+                }
+                indexAmostras = 0;
+            }
+
         }
 
         private void TimerCemMilissegundos_Tick(object sender, EventArgs e)

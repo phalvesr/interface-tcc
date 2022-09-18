@@ -10,7 +10,6 @@ namespace InterfaceAquisicaoDadosMotorDc.Infrastructure.Handlers
 
         public void IniciarCapturaDadosSerial(string portName)
         {
-            // TODO: Passar o nome da porta como argumento
             this.serialPort.BaudRate = 9600;
             this.serialPort.DataBits = 8;
             this.serialPort.Parity = Parity.None;
