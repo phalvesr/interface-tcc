@@ -41,16 +41,14 @@ namespace InterfaceAquisicaoDadosMotorDc
             DisableChartGrid();
 
             var voltageSignal = Voltage_Chart.Plot.AddSignal(voltagesToSave, 0.5, label: "Voltage (V)");
-            Voltage_Chart.Plot.SetAxisLimits(0, TOTAL_AMOSTRAS, 0, 5);
+            Voltage_Chart.Plot.SetAxisLimits(0, TOTAL_AMOSTRAS, 0, 15);
 
-            voltageSignal.FillBelow(Color.DarkGreen);
             voltageSignal.LineColor = Color.DarkGreen;
 
 
             var currentSignal = Current_Chart.Plot.AddSignal(currentsToSave, 0.5, label: "Current (A)");
-            Current_Chart.Plot.SetAxisLimits(0, TOTAL_AMOSTRAS, 0, 5);
+            Current_Chart.Plot.SetAxisLimits(0, TOTAL_AMOSTRAS, -2, 2);
 
-            currentSignal.FillBelow(Color.DarkGreen);
             currentSignal.LineColor = Color.DarkGreen;
 
 
