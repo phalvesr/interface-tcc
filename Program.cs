@@ -1,16 +1,16 @@
+using Amazon.SimpleNotificationService;
 using InterfaceAquisicaoDadosMotorDc.Core.Abstractions;
+using InterfaceAquisicaoDadosMotorDc.Core.Model;
 using InterfaceAquisicaoDadosMotorDc.Core.UseCases;
 using InterfaceAquisicaoDadosMotorDc.Core.UseCases.Interfaces;
 using InterfaceAquisicaoDadosMotorDc.Infrastructure.Handlers;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 
 namespace InterfaceAquisicaoDadosMotorDc
 {
     internal static class Program
     {
-        /// <summary>
-        ///  The main entry point for the application.
-        /// </summary>
         [STAThread]
         static void Main()
         {
@@ -31,6 +31,19 @@ namespace InterfaceAquisicaoDadosMotorDc
             services.AddSingleton<IStartSerialDataCaptureUseCase, StartSerialDataCapture>();
             services.AddSingleton<IStopSerialDataCapture, StopSerialDataCapture>();
             services.AddSingleton<ISaveCsvFileUseCase, SaveCsvFileUseCase>();
+            services.AddSingleton<ISendAlertNotification, SendAlertNotification>();
+            services.AddSingleton<INotifier, AwsSnsNotifier>();
+
+            services.AddSingleton<IAmazonSimpleNotificationService>(_ =>
+            {
+                return new AmazonSimpleNotificationServiceClient();
+            });
+            services.AddSingleton<TopicOptions>(_ =>
+            {
+                var json = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), TopicOptions.ParametersFileName));
+
+                return JsonSerializer.Deserialize<TopicOptions>(json);
+            });
         }
     }
 }

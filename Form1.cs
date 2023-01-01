@@ -1,3 +1,8 @@
+using Amazon.SimpleNotificationService;
+using Amazon.SimpleNotificationService.Model;
+using Amazon.SQS;
+using Amazon.SQS.Model;
+using InterfaceAquisicaoDadosMotorDc.Core.Model;
 using InterfaceAquisicaoDadosMotorDc.Core.UseCases.Interfaces;
 using InterfaceAquisicaoDadosMotorDc.Helpers;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +21,8 @@ namespace InterfaceAquisicaoDadosMotorDc
         private readonly IStartSerialDataCaptureUseCase startSerialDataCaptureUseCase;
         private readonly IStopSerialDataCapture stopSerialDataCaptureUseCase;
         private readonly ISaveCsvFileUseCase saveCsvFileUseCase;
+        private readonly ISendAlertNotification sendAlertNotification;
+        private readonly TopicOptions topicOptions;
 
         private int indexAmostras = 0;
 
@@ -31,6 +38,8 @@ namespace InterfaceAquisicaoDadosMotorDc
             startSerialDataCaptureUseCase = serviceProvider.GetRequiredService<IStartSerialDataCaptureUseCase>();
             stopSerialDataCaptureUseCase = serviceProvider.GetRequiredService<IStopSerialDataCapture>();
             saveCsvFileUseCase = serviceProvider.GetRequiredService<ISaveCsvFileUseCase>();
+            topicOptions = serviceProvider.GetRequiredService<TopicOptions>();
+            sendAlertNotification = serviceProvider.GetRequiredService<ISendAlertNotification>();
         }
 
         private void FormPrincipal_Load(object sender, EventArgs e)
@@ -144,6 +153,11 @@ namespace InterfaceAquisicaoDadosMotorDc
             }
 
             currentsToSave[indexAmostras] = readedCurrent;
+
+            if (readedCurrent * 1000 > topicOptions.CurrentThresholdInMilliampere)
+            {
+                sendAlertNotification.SendNotification(NotificationType.VoltageThesholdReached, DateTimeOffset.UtcNow);
+            }
         }
 
         private void UpdateVoltagePlot(double readedVoltage)
@@ -155,6 +169,11 @@ namespace InterfaceAquisicaoDadosMotorDc
             }
 
             voltagesToSave[indexAmostras] = readedVoltage;
+            
+            if (readedVoltage * 1000 > topicOptions.VoltageThresholdInMillivolts)
+            {
+                sendAlertNotification.SendNotification(NotificationType.VoltageThesholdReached, DateTimeOffset.UtcNow);
+            }
         }
 
         private void Btn_Iniciar_Captura_Dados_Click(object sender, EventArgs e)

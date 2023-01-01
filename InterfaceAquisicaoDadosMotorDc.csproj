@@ -9,6 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.100.47" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.100.46" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
     <PackageReference Include="ScottPlot.WinForms" Version="4.1.52" />
     <PackageReference Include="System.IO.Ports" Version="6.0.0" />
