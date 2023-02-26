@@ -3,6 +3,8 @@ using InterfaceAquisicaoDadosMotorDc.Core.Model;
 using InterfaceAquisicaoDadosMotorDc.Core.UseCases.Interfaces;
 using InterfaceAquisicaoDadosMotorDc.Helpers;
 using Microsoft.Extensions.DependencyInjection;
+using ScottPlot;
+using System.Drawing.Imaging;
 
 namespace InterfaceAquisicaoDadosMotorDc
 {
@@ -90,10 +92,12 @@ namespace InterfaceAquisicaoDadosMotorDc
             Voltage_Chart.Plot.XLabel("Samples");
             Voltage_Chart.Plot.YLabel("Voltage (V)");
             Voltage_Chart.Plot.Title("Voltage", true, Color.Black);
+            Voltage_Chart.Configuration.DoubleClickBenchmark = false;
 
             Current_Chart.Plot.XLabel("Samples");
             Current_Chart.Plot.YLabel("Current (A)");
             Current_Chart.Plot.Title("Current", true, Color.Black);
+            Current_Chart.Configuration.DoubleClickBenchmark = false;
         }
 
         private void Btn_Salvar_Captura_Click(object sender, EventArgs e)
@@ -255,6 +259,48 @@ namespace InterfaceAquisicaoDadosMotorDc
         {
             Current_Chart.Render();
             Voltage_Chart.Render();
+        }
+
+        private void Btn_Exportar_Graficos_Click(object sender, EventArgs e)
+        {
+            using var bitmapPlotTensao = new Bitmap(800, 600);
+            using var bitmapPlotCorrente = new Bitmap(800, 600);
+
+            Voltage_Chart.Plot.Render(bitmapPlotTensao, true);
+            Current_Chart.Plot.Render(bitmapPlotCorrente, true);
+
+            using var fileDialog = new FolderBrowserDialog();
+
+            fileDialog.InitialDirectory = "";
+
+            var dialogResult = fileDialog.ShowDialog(this);
+
+            if (dialogResult != DialogResult.OK) 
+            {
+                return;
+            }
+
+            var epochOffsetSalvamento = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+
+            var diretorioPlot = Path.Combine(fileDialog.SelectedPath, epochOffsetSalvamento);
+
+            CreateDirectoryAtPathIfDoesNotExists(diretorioPlot);
+
+            var nomeArquivoCorrente = $"{epochOffsetSalvamento}-plot-corrente.png";
+            var nomeArquivoTensao = $"{epochOffsetSalvamento}-plot-tensao.png";
+
+            bitmapPlotCorrente.Save(Path.Combine(diretorioPlot, nomeArquivoCorrente), ImageFormat.Png);
+            bitmapPlotTensao.Save(Path.Combine(diretorioPlot, nomeArquivoTensao), ImageFormat.Png);
+        }
+
+        private void CreateDirectoryAtPathIfDoesNotExists(string path)
+        {
+            if (Directory.Exists(path))
+            {
+                return;
+            }
+
+            Directory.CreateDirectory(path);
         }
     }
 }

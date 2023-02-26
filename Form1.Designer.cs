@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormPrincipal));
             this.button1 = new System.Windows.Forms.Button();
             this.Btn_Salvar_Captura = new System.Windows.Forms.Button();
             this.Cb_Lista_SerialPorts = new System.Windows.Forms.ComboBox();
@@ -38,6 +39,7 @@
             this.Voltage_Chart = new ScottPlot.FormsPlot();
             this.Current_Chart = new ScottPlot.FormsPlot();
             this.TimerCemMilissegundos = new System.Windows.Forms.Timer(this.components);
+            this.Btn_Exportar_Graficos = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // button1
@@ -51,7 +53,7 @@
             // 
             // Btn_Salvar_Captura
             // 
-            this.Btn_Salvar_Captura.Location = new System.Drawing.Point(12, 482);
+            this.Btn_Salvar_Captura.Location = new System.Drawing.Point(12, 410);
             this.Btn_Salvar_Captura.Name = "Btn_Salvar_Captura";
             this.Btn_Salvar_Captura.Size = new System.Drawing.Size(125, 41);
             this.Btn_Salvar_Captura.TabIndex = 1;
@@ -83,7 +85,7 @@
             // 
             // Btn_Iniciar_Captura_Dados
             // 
-            this.Btn_Iniciar_Captura_Dados.Location = new System.Drawing.Point(12, 435);
+            this.Btn_Iniciar_Captura_Dados.Location = new System.Drawing.Point(12, 363);
             this.Btn_Iniciar_Captura_Dados.Name = "Btn_Iniciar_Captura_Dados";
             this.Btn_Iniciar_Captura_Dados.Size = new System.Drawing.Size(125, 41);
             this.Btn_Iniciar_Captura_Dados.TabIndex = 6;
@@ -112,15 +114,27 @@
             this.TimerCemMilissegundos.Enabled = true;
             this.TimerCemMilissegundos.Tick += new System.EventHandler(this.TimerCemMilissegundos_Tick);
             // 
+            // Btn_Exportar_Graficos
+            // 
+            this.Btn_Exportar_Graficos.Location = new System.Drawing.Point(12, 457);
+            this.Btn_Exportar_Graficos.Name = "Btn_Exportar_Graficos";
+            this.Btn_Exportar_Graficos.Size = new System.Drawing.Size(125, 41);
+            this.Btn_Exportar_Graficos.TabIndex = 9;
+            this.Btn_Exportar_Graficos.Text = "Exportar graficos";
+            this.Btn_Exportar_Graficos.UseVisualStyleBackColor = true;
+            this.Btn_Exportar_Graficos.Click += new System.EventHandler(this.Btn_Exportar_Graficos_Click);
+            // 
             // FormPrincipal
             // 
             this.ClientSize = new System.Drawing.Size(784, 561);
+            this.Controls.Add(this.Btn_Exportar_Graficos);
             this.Controls.Add(this.Current_Chart);
             this.Controls.Add(this.Voltage_Chart);
             this.Controls.Add(this.Btn_Iniciar_Captura_Dados);
             this.Controls.Add(this.Lb_Serial_Port_Combo_Box);
             this.Controls.Add(this.Cb_Lista_SerialPorts);
             this.Controls.Add(this.Btn_Salvar_Captura);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.Name = "FormPrincipal";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
@@ -142,5 +156,6 @@
         private ScottPlot.FormsPlot Voltage_Chart;
         private ScottPlot.FormsPlot Current_Chart;
         private System.Windows.Forms.Timer TimerCemMilissegundos;
+        private Button Btn_Exportar_Graficos;
     }
 }

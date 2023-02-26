@@ -29,6 +29,7 @@ namespace InterfaceAquisicaoDadosMotorDc.Infrastructure.Handlers
                     Message = message,
                     TopicArn = topicOptions.TopicArn,
                 });
+                logger.LogInformation("Notificacao enviada com sucesso para o topico {NomeTopico} na AWS", topicOptions.TopicArn);
             }
             catch (Exception e) 
             {
