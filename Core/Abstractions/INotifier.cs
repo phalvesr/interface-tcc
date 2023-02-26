@@ -1,6 +1,6 @@
 ﻿namespace InterfaceAquisicaoDadosMotorDc.Core.Abstractions
 {
-    internal interface INotifier
+    public interface INotifier
     {
         void Notify(string message);
     }

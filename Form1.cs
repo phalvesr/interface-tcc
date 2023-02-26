@@ -1,7 +1,4 @@
-using Amazon.SimpleNotificationService;
-using Amazon.SimpleNotificationService.Model;
-using Amazon.SQS;
-using Amazon.SQS.Model;
+using InterfaceAquisicaoDadosMotorDc.Core.Abstractions.Providers;
 using InterfaceAquisicaoDadosMotorDc.Core.Model;
 using InterfaceAquisicaoDadosMotorDc.Core.UseCases.Interfaces;
 using InterfaceAquisicaoDadosMotorDc.Helpers;
@@ -11,8 +8,8 @@ namespace InterfaceAquisicaoDadosMotorDc
 {
     public partial class FormPrincipal : Form
     {
-        // tempo total de captura: (TEMPO_AMOSTRAS / 0.050)
-        const int TOTAL_AMOSTRAS = 10_000;
+        // tempo total de captura: (TEMPO_AMOSTRAS / 1)
+        const int TOTAL_AMOSTRAS = 1_000;
 
         private bool isCapturandoDados = false;
 
@@ -23,6 +20,7 @@ namespace InterfaceAquisicaoDadosMotorDc
         private readonly ISaveCsvFileUseCase saveCsvFileUseCase;
         private readonly ISendAlertNotification sendAlertNotification;
         private readonly TopicOptions topicOptions;
+        private readonly ILogProvider logger;
 
         private int indexAmostras = 0;
 
@@ -40,40 +38,44 @@ namespace InterfaceAquisicaoDadosMotorDc
             saveCsvFileUseCase = serviceProvider.GetRequiredService<ISaveCsvFileUseCase>();
             topicOptions = serviceProvider.GetRequiredService<TopicOptions>();
             sendAlertNotification = serviceProvider.GetRequiredService<ISendAlertNotification>();
+            logger = serviceProvider.GetRequiredService<ILogProvider>();
         }
 
         private void FormPrincipal_Load(object sender, EventArgs e)
         {
+            logger.LogDebug("Iniciando configuracao do timer");
             Timer_Atualizacao_Portas_Seriais.Start();
 
+            logger.LogDebug("Configurando graficos da tela");
             SetChartsLabels();
             DisableChartGrid();
 
-            var voltageSignal = Voltage_Chart.Plot.AddSignal(voltagesToSave, 0.5, label: "Voltage (V)");
+            var voltageSignal = Voltage_Chart.Plot.AddSignal(voltagesToSave, label: "Tensao (V)");
             Voltage_Chart.Plot.SetAxisLimits(0, TOTAL_AMOSTRAS, 0, 15);
 
             voltageSignal.LineColor = Color.DarkGreen;
 
 
-            var currentSignal = Current_Chart.Plot.AddSignal(currentsToSave, 0.5, label: "Current (A)");
-            Current_Chart.Plot.SetAxisLimits(0, TOTAL_AMOSTRAS, -2, 2);
+            var currentSignal = Current_Chart.Plot.AddSignal(currentsToSave, label: "Corrente (A)");
+            Current_Chart.Plot.SetAxisLimits(0, TOTAL_AMOSTRAS, -1.5, 1.5);
 
             currentSignal.LineColor = Color.DarkGreen;
 
-
+            logger.LogDebug("Atrelando evento de recepcao de dados na serial");
             this.serialDataReceivedHandler.SerialDataParsed += SerialDataReceivedHandler_SerialDataParsed;
         }
 
         private void SerialDataReceivedHandler_SerialDataParsed(object? sender, EventArgs e)
         {
-            
+            logger.LogDebug("Dado recebido na serial. Iniciando processamento");
+
             var serialDataReceived = (ISerialDataReceivedHandler)sender!;
 
             var voltage = serialDataReceived!.Voltage;
             var current = serialDataReceived!.Current;
 
             UpdateVoltagePlot(ConversorDiscretoFisico.ConverterParaTensao(voltage));
-            UpdateCurrentPlot(ConversorDiscretoFisico.ConverterParaCorrente(current));
+            AtualizarLeituraCorrente(ConversorDiscretoFisico.ConverterParaCorrente(current));
             indexAmostras++;
         }
 
@@ -96,8 +98,12 @@ namespace InterfaceAquisicaoDadosMotorDc
 
         private void Btn_Salvar_Captura_Click(object sender, EventArgs e)
         {
+            logger.LogDebug("Iniciando processo de salvamento de captura");
+
             if (!isCapturandoDados)
             {
+                logger.LogWarning("Processo de salvamento de captura requisitado com captura de dados em status de nao capturando. Retornando do procedimento.");
+
                 MessageBox.Show("Captura de dados não foi iniciada", "Captura não acionada", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
                 return;
@@ -119,15 +125,21 @@ namespace InterfaceAquisicaoDadosMotorDc
 
             if (fileDialog.ShowDialog() != DialogResult.OK)
             {
+                logger.LogInformation("Usuario recusou salvar dados. Retornando imediatamente de {NomeMetodo}", nameof(Btn_Salvar_Captura_Click));
+
                 return;
             }
 
             this.saveCsvFileUseCase.GerarCsv(fileDialog.FileName, this.voltagesToSave, this.currentsToSave, indexAmostras)
             .match(_ =>
             {
+                logger.LogInformation("Arquivo {NomeArquivo} salvo com sucesso!");
+
                 MessageBox.Show("Arquivo salvo com sucesso!", "Arquivo salvo!", MessageBoxButtons.OK);
             }, erro =>
             {
+                logger.LogWarning("Erro ao salvar arquivo {NomeArquivo}. Mensagem de erro: {MensagemErro}", erro.Message);
+
                 MessageBox.Show(erro.Message, "Erro ao salvar arquivo", MessageBoxButtons.OK, MessageBoxIcon.Error);
             });
 
@@ -135,6 +147,8 @@ namespace InterfaceAquisicaoDadosMotorDc
 
         private void Timer_Atualizacao_Portas_Seriais_Tick(object sender, EventArgs e)
         {
+            logger.LogDebug("Rotina do timer de atualizacao de portas seriais sendo executada");
+
             Timer_Atualizacao_Portas_Seriais.Stop();
 
             var serialPorts = listaSerialPortsUseCase.Execute();
@@ -143,9 +157,11 @@ namespace InterfaceAquisicaoDadosMotorDc
             Cb_Lista_SerialPorts.Items.AddRange(serialPorts);
 
             Timer_Atualizacao_Portas_Seriais.Start();
+
+            logger.LogDebug("Fim da execucao da rotina do timer de atualizacao de portas seriais");
         }
 
-        private void UpdateCurrentPlot(double readedCurrent)
+        private void AtualizarLeituraCorrente(double readedCurrent)
         {
             if (indexAmostras >= TOTAL_AMOSTRAS)
             {
@@ -156,7 +172,7 @@ namespace InterfaceAquisicaoDadosMotorDc
 
             if (readedCurrent * 1000 > topicOptions.CurrentThresholdInMilliampere)
             {
-                sendAlertNotification.SendNotification(NotificationType.VoltageThesholdReached, DateTimeOffset.UtcNow);
+                sendAlertNotification.SendNotification(NotificationType.CurrentThesholdReached, DateTimeOffset.UtcNow);
             }
         }
 
@@ -182,19 +198,26 @@ namespace InterfaceAquisicaoDadosMotorDc
 
             if (string.IsNullOrEmpty(selectedPortName) || string.IsNullOrEmpty(selectedPortName))
             {
+                logger.LogWarning("Tentativa de inicio de captura de dados sem porta selecionada");
+
                 MessageBox.Show("Por favor, selecione uma porta serial", "Porta serial inválida",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
+            logger.LogInformation("Tentando iniciar captura de dados na porta {NomePorta}", selectedPortName);
+
             this.isCapturandoDados = !this.isCapturandoDados;
 
             if (this.isCapturandoDados)
             {
+                logger.LogInformation("Iniciando captura de dados");
+
                 IniciarCapturaDados(selectedPortName);
                 return;
             }
 
+            logger.LogInformation("Parando captura de dados");
             PararCapturaDados();
         }
 

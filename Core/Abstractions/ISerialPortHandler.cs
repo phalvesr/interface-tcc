@@ -2,7 +2,7 @@
 
 namespace InterfaceAquisicaoDadosMotorDc.Core.Abstractions
 {
-    internal interface ISerialPortHandler
+    public interface ISerialPortHandler
     {
         string[] ListarSerialPortsDisponiveis();
         void RegisterSerialDataReceivedEventHandler(SerialDataReceivedEventHandler handler);

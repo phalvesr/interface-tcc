@@ -20,6 +20,11 @@ namespace InterfaceAquisicaoDadosMotorDc.Core.UseCases
         {
             try
             {
+                if (quantidadeAmostras == 0)
+                {
+                    return Either<ArquivoNaoSalvo, ArquivoSalvoComSucesso>.left(new ArquivoNaoSalvo("Quantidade de amostras zerada!"));
+                }
+
                 var filePath = path.EndsWith(".csv") ? path : path + ".csv";
 
                 using var fileStream = new FileStream(filePath, FileMode.CreateNew);

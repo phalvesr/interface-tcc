@@ -1,10 +1,13 @@
 using Amazon.SimpleNotificationService;
 using InterfaceAquisicaoDadosMotorDc.Core.Abstractions;
+using InterfaceAquisicaoDadosMotorDc.Core.Abstractions.Providers;
 using InterfaceAquisicaoDadosMotorDc.Core.Model;
 using InterfaceAquisicaoDadosMotorDc.Core.UseCases;
 using InterfaceAquisicaoDadosMotorDc.Core.UseCases.Interfaces;
 using InterfaceAquisicaoDadosMotorDc.Infrastructure.Handlers;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog.Core;
+using Serilog.Events;
 using System.Text.Json;
 
 namespace InterfaceAquisicaoDadosMotorDc
@@ -14,13 +17,60 @@ namespace InterfaceAquisicaoDadosMotorDc
         [STAThread]
         static void Main()
         {
-            var serviceCollection = new ServiceCollection();
-            RegisterAppDependencies(serviceCollection);
+            var logLevelSwitch = GetLogLevelSwitch();
 
-            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var logger = new LogProviderDefault(logLevelSwitch);
 
-            ApplicationConfiguration.Initialize();
-            Application.Run(new FormPrincipal(serviceProvider));
+            try
+            {
+                logger.LogInformation("Iniciando aplicacao");
+
+                var serviceCollection = new ServiceCollection();
+
+                logger.LogInformation("Carregando log do projeto no container de DI");
+                LoadLoggerToDiContainer(serviceCollection, logger);
+
+                logger.LogInformation("Registrando demais dependencias");
+                RegisterAppDependencies(serviceCollection);
+
+                var serviceProvider = serviceCollection.BuildServiceProvider();
+
+                logger.LogInformation("Iniciando interface");
+                ApplicationConfiguration.Initialize();
+
+                logger.LogInformation("Rodando aplicacao");
+                Application.Run(new FormPrincipal(serviceProvider));
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "[{ExceptionType}] Erro ao iniciar aplicacao. Abortando inicializacao!", e.GetType());
+                throw;
+            }
+        }
+
+        private static LoggingLevelSwitch GetLogLevelSwitch()
+        {
+            var logLevel = GetMinimumLogLevelFromPropertiesFileOrDefault();
+
+            return new LoggingLevelSwitch(logLevel);
+        }
+
+        private static LogEventLevel GetMinimumLogLevelFromPropertiesFileOrDefault()
+        {
+            try
+            {
+                using var fileStream = new FileStream(Path.Combine(Directory.GetCurrentDirectory(), "config", "log-level"), FileMode.Open);
+                using var streamReader = new StreamReader(fileStream);
+
+                var readedLogLevel = streamReader.ReadLine();
+
+                return Enum.Parse<LogEventLevel>(readedLogLevel!);
+
+            }
+            catch
+            {
+                return LogEventLevel.Information;
+            }
         }
 
         private static void RegisterAppDependencies(IServiceCollection services)
@@ -33,6 +83,7 @@ namespace InterfaceAquisicaoDadosMotorDc
             services.AddSingleton<ISaveCsvFileUseCase, SaveCsvFileUseCase>();
             services.AddSingleton<ISendAlertNotification, SendAlertNotification>();
             services.AddSingleton<INotifier, AwsSnsNotifier>();
+            services.AddSingleton<IDateTimeOffsetProvider, DateTimeOffsetProviderDefault>();
 
             services.AddSingleton<IAmazonSimpleNotificationService>(_ =>
             {
@@ -42,8 +93,17 @@ namespace InterfaceAquisicaoDadosMotorDc
             {
                 var json = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), TopicOptions.ParametersFileName));
 
-                return JsonSerializer.Deserialize<TopicOptions>(json);
+                var topicOptions = JsonSerializer.Deserialize<TopicOptions>(json);
+
+                topicOptions?.ValidateAndThrow();
+
+                return topicOptions!;
             });
+        }
+
+        private static void LoadLoggerToDiContainer(IServiceCollection services, ILogProvider logProvider)
+        {
+            services.AddSingleton<ILogProvider>(logProvider);
         }
     }
 }

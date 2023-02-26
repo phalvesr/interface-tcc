@@ -1,8 +1,8 @@
 ﻿namespace InterfaceAquisicaoDadosMotorDc.Helpers
 {
-    internal class ConversorDiscretoFisico
+    public class ConversorDiscretoFisico
     {
-        internal static double ConverterParaTensao(int valorDiscreto)
+        public static double ConverterParaTensao(int valorDiscreto)
         {
             const int QUANTIDADE_VALORES_POSSIVEIS_10_BITS = 1023;
             const double TENSAO_ADC = 5.0;
@@ -17,15 +17,18 @@
             return tensaoMotor;
         }
 
-        internal static double ConverterParaCorrente(int valorDiscreto)
+        public static double ConverterParaCorrente(int valorDiscreto)
         {
+            const double OFFSET_SENSOR_CORRENTE = 2.5;
+
             const int QUANTIDADE_VALORES_POSSIVEIS_10_BITS = 1023;
             const double TENSAO_ADC = 5.0;
-            const double VOLTS_POR_AMPERE = 66e-3;
+
+            const double VOLTS_POR_AMPERE = 185e-3;
 
             double tensaoLida = ((double)valorDiscreto / QUANTIDADE_VALORES_POSSIVEIS_10_BITS) * TENSAO_ADC;
 
-            double corrente = (tensaoLida - 2.5) / VOLTS_POR_AMPERE;
+            double corrente = (OFFSET_SENSOR_CORRENTE - tensaoLida) / VOLTS_POR_AMPERE;
 
             return corrente;
         }

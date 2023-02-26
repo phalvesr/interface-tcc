@@ -1,35 +1,41 @@
 ﻿using InterfaceAquisicaoDadosMotorDc.Core.Abstractions;
+using InterfaceAquisicaoDadosMotorDc.Core.Abstractions.Providers;
 using InterfaceAquisicaoDadosMotorDc.Core.UseCases.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using System.IO.Ports;
 
 namespace InterfaceAquisicaoDadosMotorDc.Core.UseCases
 {
-    internal class HandleDataReceivedUseCase : ISerialDataReceivedHandler
+    public class HandleDataReceivedUseCase : ISerialDataReceivedHandler
     {
 
         public int Voltage { get; private set; }
         public int Current { get; private set; }
 
         private readonly ISerialPortHandler serialPortHandler;
+        private readonly ILogProvider logger;
+
         public event EventHandler SerialDataParsed;
 
         public HandleDataReceivedUseCase(IServiceProvider serviceProvider)
         {
             serialPortHandler = serviceProvider.GetRequiredService<ISerialPortHandler>();
+            logger = serviceProvider.GetRequiredService<ILogProvider>();
         }
 
         public void Execute()
         {
-            this.serialPortHandler.RegisterSerialDataReceivedEventHandler(this.handler);
+            this.serialPortHandler.RegisterSerialDataReceivedEventHandler(this.Handler);
         }
 
-        private void handler(object sender, SerialDataReceivedEventArgs e)
+        private void Handler(object sender, SerialDataReceivedEventArgs e)
         {
             try
             {
                 var serialPort = sender as SerialPort;
                 var linha = serialPort!.ReadLine();
+
+                logger.LogDebug("Tentando processar linha recebida com conteudo {ConteudoLinha}", linha);
 
                 var (tensaoDiscretizada, correnteDiscretizada) = ParseLinhaRecebida(linha.Trim());
 
@@ -40,10 +46,14 @@ namespace InterfaceAquisicaoDadosMotorDc.Core.UseCases
             }
             // Deveria ocorrer somente quando a porta for fechada e o buffer serial retornar um valor que,
             // ao ser parseado gera exception
-            catch (SystemException) {  }
+            catch (Exception ex) 
+            {
+                logger.LogWarning("[{ExceptionType}] Exception lancada ao tentar parsear informacao recebida", ex.GetType());
+                logger.LogError(ex, "[{ExceptionType}] Dados da exception");
+            }
         }
 
-        private (int tensaoDiscretizada, int correnteDiscretizada) ParseLinhaRecebida(string linha)
+        internal (int tensaoDiscretizada, int correnteDiscretizada) ParseLinhaRecebida(string linha)
         {
             try
             {
@@ -54,8 +64,10 @@ namespace InterfaceAquisicaoDadosMotorDc.Core.UseCases
 
                 return (tensao, corrente);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                logger.LogWarning("[{ExceptionType}] Exception lancada ao tentar parsear informacao recebida", ex.GetType());
+                logger.LogError(ex, "[{ExceptionType}] Dados da exception. Retornando valor default de (0, 0)");
                 return (0, 0);
             }
         }
