@@ -1,9 +1,12 @@
 using Amazon.SimpleNotificationService;
+using FluentValidation;
+using IniParser;
 using InterfaceAquisicaoDadosMotorDc.Core.Abstractions;
 using InterfaceAquisicaoDadosMotorDc.Core.Abstractions.Providers;
 using InterfaceAquisicaoDadosMotorDc.Core.Model;
 using InterfaceAquisicaoDadosMotorDc.Core.UseCases;
 using InterfaceAquisicaoDadosMotorDc.Core.UseCases.Interfaces;
+using InterfaceAquisicaoDadosMotorDc.Helpers;
 using InterfaceAquisicaoDadosMotorDc.Infrastructure.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog.Core;
@@ -17,6 +20,9 @@ namespace InterfaceAquisicaoDadosMotorDc
         [STAThread]
         static void Main()
         {
+            var serviceCollection = new ServiceCollection();
+            ServiceProvider serviceProvider = null!;
+
             var logLevelSwitch = GetLogLevelSwitch();
 
             var logger = new LogProviderDefault(logLevelSwitch);
@@ -25,15 +31,13 @@ namespace InterfaceAquisicaoDadosMotorDc
             {
                 logger.LogInformation("Iniciando aplicacao");
 
-                var serviceCollection = new ServiceCollection();
-
                 logger.LogInformation("Carregando log do projeto no container de DI");
                 LoadLoggerToDiContainer(serviceCollection, logger);
 
                 logger.LogInformation("Registrando demais dependencias");
                 RegisterAppDependencies(serviceCollection);
 
-                var serviceProvider = serviceCollection.BuildServiceProvider();
+                serviceProvider = serviceCollection.BuildServiceProvider();
 
                 logger.LogInformation("Iniciando interface");
                 ApplicationConfiguration.Initialize();
@@ -45,6 +49,12 @@ namespace InterfaceAquisicaoDadosMotorDc
             {
                 logger.LogError(e, "[{ExceptionType}] Erro ao iniciar aplicacao. Abortando inicializacao!", e.GetType());
                 throw;
+            }
+            finally
+            {
+                var serialPortHandler = serviceProvider?.GetRequiredService<ISerialPortHandler>();
+
+                serialPortHandler!.Dispose();
             }
         }
 
@@ -59,12 +69,10 @@ namespace InterfaceAquisicaoDadosMotorDc
         {
             try
             {
-                using var fileStream = new FileStream(Path.Combine(Directory.GetCurrentDirectory(), "config", "log-level"), FileMode.Open);
-                using var streamReader = new StreamReader(fileStream);
+                var fileIniDataParser = new FileIniDataParser();
+                var data = fileIniDataParser.ReadFile(Path.Combine(Directory.GetCurrentDirectory(), "config", "config.ini"));
 
-                var readedLogLevel = streamReader.ReadLine();
-
-                return Enum.Parse<LogEventLevel>(readedLogLevel!);
+                return Enum.Parse<LogEventLevel>(data.GetKey("loglevel"));
 
             }
             catch
@@ -84,6 +92,7 @@ namespace InterfaceAquisicaoDadosMotorDc
             services.AddSingleton<ISendAlertNotification, SendAlertNotification>();
             services.AddSingleton<INotifier, AwsSnsNotifier>();
             services.AddSingleton<IDateTimeOffsetProvider, DateTimeOffsetProviderDefault>();
+            services.AddSingleton<IValidator<SerialPortModel>, SerialPortModelValidator>();
 
             services.AddSingleton<IAmazonSimpleNotificationService>(_ =>
             {

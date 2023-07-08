@@ -1,5 +1,6 @@
 ﻿using InterfaceAquisicaoDadosMotorDc.Core.Abstractions;
 using InterfaceAquisicaoDadosMotorDc.Core.Abstractions.Providers;
+using InterfaceAquisicaoDadosMotorDc.Core.Model;
 using System.IO.Ports;
 
 namespace InterfaceAquisicaoDadosMotorDc.Infrastructure.Handlers
@@ -16,24 +17,20 @@ namespace InterfaceAquisicaoDadosMotorDc.Infrastructure.Handlers
             this.logger = logger;
         }
 
-        public void IniciarCapturaDadosSerial(string portName)
+        public void IniciarCapturaDadosSerial(SerialPortModel serialPortModel)
         {
-            const int baudRate = 9600;
-            const int dataBits = 8;
-            const Parity parity = Parity.None;
-
             logger.LogInformation("Iniciando captura com configuracao {@ConfiguracaoCapturaPortaSerial}", new 
-            { 
-                BaudRate = baudRate,
-                DataBits = dataBits,
-                Parity = parity,
-                PortName = portName
+            {
+                serialPortModel.BaudRate,
+                serialPortModel.DataBits,
+                serialPortModel.Paridade,
+                serialPortModel.PortName
             });
 
-            this.serialPort.BaudRate = baudRate;
-            this.serialPort.DataBits = dataBits;
-            this.serialPort.Parity = parity;
-            this.serialPort.PortName = portName;
+            this.serialPort.BaudRate = int.Parse(serialPortModel.BaudRate);
+            this.serialPort.DataBits = int.Parse(serialPortModel.DataBits);
+            this.serialPort.Parity = Enum.Parse<Parity>(serialPortModel.Paridade);
+            this.serialPort.PortName = serialPortModel.PortName;
 
             this.serialPort.Open();
         }
@@ -62,7 +59,7 @@ namespace InterfaceAquisicaoDadosMotorDc.Infrastructure.Handlers
             this.serialPort.DataReceived += handler;
         }
 
-        ~SerialPortHandler()
+        public void Dispose()
         {
             logger.LogInformation("Finalizando porta serial");
 

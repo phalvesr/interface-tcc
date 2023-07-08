@@ -1,16 +1,16 @@
+using FluentValidation;
 using InterfaceAquisicaoDadosMotorDc.Core.Abstractions.Providers;
 using InterfaceAquisicaoDadosMotorDc.Core.Model;
 using InterfaceAquisicaoDadosMotorDc.Core.UseCases.Interfaces;
 using InterfaceAquisicaoDadosMotorDc.Helpers;
 using Microsoft.Extensions.DependencyInjection;
-using ScottPlot;
+using System.Diagnostics;
 using System.Drawing.Imaging;
 
 namespace InterfaceAquisicaoDadosMotorDc
 {
     public partial class FormPrincipal : Form
     {
-        // tempo total de captura: (TEMPO_AMOSTRAS / 1)
         const int TOTAL_AMOSTRAS = 1_000;
 
         private bool isCapturandoDados = false;
@@ -23,7 +23,7 @@ namespace InterfaceAquisicaoDadosMotorDc
         private readonly ISendAlertNotification sendAlertNotification;
         private readonly TopicOptions topicOptions;
         private readonly ILogProvider logger;
-
+        private readonly IValidator<SerialPortModel> serialPortModelValidator;
         private int indexAmostras = 0;
 
         private readonly double[] voltagesToSave = new double[TOTAL_AMOSTRAS];
@@ -41,6 +41,7 @@ namespace InterfaceAquisicaoDadosMotorDc
             topicOptions = serviceProvider.GetRequiredService<TopicOptions>();
             sendAlertNotification = serviceProvider.GetRequiredService<ISendAlertNotification>();
             logger = serviceProvider.GetRequiredService<ILogProvider>();
+            serialPortModelValidator = serviceProvider.GetRequiredService<IValidator<SerialPortModel>>();
         }
 
         private void FormPrincipal_Load(object sender, EventArgs e)
@@ -89,12 +90,12 @@ namespace InterfaceAquisicaoDadosMotorDc
 
         private void SetChartsLabels()
         {
-            Voltage_Chart.Plot.XLabel("Samples");
+            Voltage_Chart.Plot.XLabel("Tempo (s)");
             Voltage_Chart.Plot.YLabel("Voltage (V)");
             Voltage_Chart.Plot.Title("Voltage", true, Color.Black);
             Voltage_Chart.Configuration.DoubleClickBenchmark = false;
 
-            Current_Chart.Plot.XLabel("Samples");
+            Current_Chart.Plot.XLabel("Tempo (s)");
             Current_Chart.Plot.YLabel("Current (A)");
             Current_Chart.Plot.Title("Current", true, Color.Black);
             Current_Chart.Configuration.DoubleClickBenchmark = false;
@@ -198,18 +199,33 @@ namespace InterfaceAquisicaoDadosMotorDc
 
         private void Btn_Iniciar_Captura_Dados_Click(object sender, EventArgs e)
         {
-            var selectedPortName = Cb_Lista_SerialPorts.Text;
+            var portName = Cb_Lista_SerialPorts.Text;
+            var baudRate = Tbx_Baud_Rate.Text;
+            var dataBits = Tbx_Data_Bits.Text;
+            var parity = Cb_Paridade.Text;
 
-            if (string.IsNullOrEmpty(selectedPortName) || string.IsNullOrEmpty(selectedPortName))
+            var serialPortModel = new SerialPortModel
             {
-                logger.LogWarning("Tentativa de inicio de captura de dados sem porta selecionada");
+                PortName = portName,
+                BaudRate = baudRate,
+                DataBits = dataBits,
+                Paridade = parity
+            };
 
-                MessageBox.Show("Por favor, selecione uma porta serial", "Porta serial inválida",
+            var validationResult = serialPortModelValidator.Validate(serialPortModel);
+
+            if (!validationResult.IsValid)
+            {
+                logger.LogWarning("Tentativa de inicio de captura de dados sem configuracao de porta correta");
+
+                MessageBox.Show(string.Join($",{Environment.NewLine}{Environment.NewLine}", 
+                    validationResult.Errors.Select(e => e.ErrorMessage).ToArray()), 
+                    "Dados porta serial invalidos",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            logger.LogInformation("Tentando iniciar captura de dados na porta {NomePorta}", selectedPortName);
+            logger.LogInformation("Tentando iniciar captura de dados na porta {NomePorta}", portName);
 
             this.isCapturandoDados = !this.isCapturandoDados;
 
@@ -217,7 +233,7 @@ namespace InterfaceAquisicaoDadosMotorDc
             {
                 logger.LogInformation("Iniciando captura de dados");
 
-                IniciarCapturaDados(selectedPortName);
+                IniciarCapturaDados(serialPortModel);
                 return;
             }
 
@@ -225,13 +241,23 @@ namespace InterfaceAquisicaoDadosMotorDc
             PararCapturaDados();
         }
 
-        private void IniciarCapturaDados(string selectedPortName)
+        private void IniciarCapturaDados(SerialPortModel serialPortModel)
         {
             this.serialDataReceivedHandler.Execute();
-            this.startSerialDataCaptureUseCase.Execute(selectedPortName);
+            this.startSerialDataCaptureUseCase.Execute(serialPortModel);
 
             isCapturandoDados = true;
             Btn_Iniciar_Captura_Dados.Text = "Parar captura";
+
+            DesabilitarControladoresPortaSerial();
+        }
+
+        private void DesabilitarControladoresPortaSerial()
+        {
+            Cb_Lista_SerialPorts.Enabled = false;
+            Tbx_Baud_Rate.Enabled = false;
+            Tbx_Data_Bits.Enabled = false;
+            Cb_Paridade.Enabled = false;
         }
 
         private void PararCapturaDados()
@@ -253,6 +279,15 @@ namespace InterfaceAquisicaoDadosMotorDc
                 indexAmostras = 0;
             }
 
+            HabilitarControladoresPortaSerial();
+        }
+
+        private void HabilitarControladoresPortaSerial()
+        {
+            Cb_Lista_SerialPorts.Enabled = true;
+            Tbx_Baud_Rate.Enabled = true;
+            Tbx_Data_Bits.Enabled = true;
+            Cb_Paridade.Enabled = true;
         }
 
         private void TimerCemMilissegundos_Tick(object sender, EventArgs e)
@@ -263,12 +298,6 @@ namespace InterfaceAquisicaoDadosMotorDc
 
         private void Btn_Exportar_Graficos_Click(object sender, EventArgs e)
         {
-            using var bitmapPlotTensao = new Bitmap(800, 600);
-            using var bitmapPlotCorrente = new Bitmap(800, 600);
-
-            Voltage_Chart.Plot.Render(bitmapPlotTensao, true);
-            Current_Chart.Plot.Render(bitmapPlotCorrente, true);
-
             using var fileDialog = new FolderBrowserDialog();
 
             fileDialog.InitialDirectory = "";
@@ -279,6 +308,12 @@ namespace InterfaceAquisicaoDadosMotorDc
             {
                 return;
             }
+
+            using var bitmapPlotTensao = new Bitmap(800, 600);
+            using var bitmapPlotCorrente = new Bitmap(800, 600);
+
+            Voltage_Chart.Plot.Render(bitmapPlotTensao, true);
+            Current_Chart.Plot.Render(bitmapPlotCorrente, true);
 
             var epochOffsetSalvamento = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
 

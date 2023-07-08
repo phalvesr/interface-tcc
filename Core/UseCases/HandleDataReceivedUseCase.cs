@@ -34,10 +34,12 @@ namespace InterfaceAquisicaoDadosMotorDc.Core.UseCases
             {
                 var serialPort = sender as SerialPort;
                 var linha = serialPort!.ReadLine();
+                
+                var linhaLimpa = linha.Trim();
 
-                logger.LogDebug("Tentando processar linha recebida com conteudo {ConteudoLinha}", linha);
+                logger.LogDebug("Tentando processar linha recebida com conteudo {ConteudoLinha}", linhaLimpa);
 
-                var (tensaoDiscretizada, correnteDiscretizada) = ParseLinhaRecebida(linha.Trim());
+                var (tensaoDiscretizada, correnteDiscretizada) = ParseLinhaRecebida(linhaLimpa);
 
                 this.Voltage = tensaoDiscretizada;
                 this.Current = correnteDiscretizada;

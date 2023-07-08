@@ -30,7 +30,7 @@
 
             double corrente = (OFFSET_SENSOR_CORRENTE - tensaoLida) / VOLTS_POR_AMPERE;
 
-            return corrente;
+            return Math.Abs(corrente);
         }
     }
 }

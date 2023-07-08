@@ -1,12 +1,13 @@
-﻿using System.IO.Ports;
+﻿using InterfaceAquisicaoDadosMotorDc.Core.Model;
+using System.IO.Ports;
 
 namespace InterfaceAquisicaoDadosMotorDc.Core.Abstractions
 {
-    public interface ISerialPortHandler
+    public interface ISerialPortHandler : IDisposable
     {
         string[] ListarSerialPortsDisponiveis();
         void RegisterSerialDataReceivedEventHandler(SerialDataReceivedEventHandler handler);
-        void IniciarCapturaDadosSerial(string portName);
+        void IniciarCapturaDadosSerial(SerialPortModel serialPortModel);
         void PararCapturaDadosSerial();
     }
 }

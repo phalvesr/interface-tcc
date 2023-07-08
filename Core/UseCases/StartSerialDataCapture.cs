@@ -1,4 +1,5 @@
 ﻿using InterfaceAquisicaoDadosMotorDc.Core.Abstractions;
+using InterfaceAquisicaoDadosMotorDc.Core.Model;
 using InterfaceAquisicaoDadosMotorDc.Core.UseCases.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,7 +14,7 @@ namespace InterfaceAquisicaoDadosMotorDc.Core.UseCases
             this.serialPortHandler = serviceProvider.GetRequiredService<ISerialPortHandler>();
         }
 
-        public void Execute(string param)
+        public void Execute(SerialPortModel param)
         {
             serialPortHandler.IniciarCapturaDadosSerial(param);
         }
