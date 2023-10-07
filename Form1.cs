@@ -4,7 +4,6 @@ using InterfaceAquisicaoDadosMotorDc.Core.Model;
 using InterfaceAquisicaoDadosMotorDc.Core.UseCases.Interfaces;
 using InterfaceAquisicaoDadosMotorDc.Helpers;
 using Microsoft.Extensions.DependencyInjection;
-using System.Diagnostics;
 using System.Drawing.Imaging;
 
 namespace InterfaceAquisicaoDadosMotorDc
@@ -90,12 +89,12 @@ namespace InterfaceAquisicaoDadosMotorDc
 
         private void SetChartsLabels()
         {
-            Voltage_Chart.Plot.XLabel("Tempo (s)");
+            Voltage_Chart.Plot.XLabel("Time (s)");
             Voltage_Chart.Plot.YLabel("Voltage (V)");
             Voltage_Chart.Plot.Title("Voltage", true, Color.Black);
             Voltage_Chart.Configuration.DoubleClickBenchmark = false;
 
-            Current_Chart.Plot.XLabel("Tempo (s)");
+            Current_Chart.Plot.XLabel("Time (s)");
             Current_Chart.Plot.YLabel("Current (A)");
             Current_Chart.Plot.Title("Current", true, Color.Black);
             Current_Chart.Configuration.DoubleClickBenchmark = false;

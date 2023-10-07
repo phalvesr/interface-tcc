@@ -51,7 +51,7 @@ namespace InterfaceAquisicaoDadosMotorDc.Core.UseCases
             catch (Exception ex) 
             {
                 logger.LogWarning("[{ExceptionType}] Exception lancada ao tentar parsear informacao recebida", ex.GetType());
-                logger.LogError(ex, "[{ExceptionType}] Dados da exception");
+                logger.LogError(ex, "[{ExceptionType}] Dados da exception", ex.GetType());
             }
         }
 
@@ -69,7 +69,7 @@ namespace InterfaceAquisicaoDadosMotorDc.Core.UseCases
             catch (Exception ex)
             {
                 logger.LogWarning("[{ExceptionType}] Exception lancada ao tentar parsear informacao recebida", ex.GetType());
-                logger.LogError(ex, "[{ExceptionType}] Dados da exception. Retornando valor default de (0, 0)");
+                logger.LogError(ex, "[{ExceptionType}] Dados da exception. Retornando valor default de (0, 0)", ex.GetType());
                 return (0, 0);
             }
         }
